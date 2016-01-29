@@ -18,10 +18,11 @@
 
   2. **Phenotype data** – this would be the hard part! Go forth and perform a well-designed experiment.
 
-## Munge Data
+## Munge Data #######
 
-  I made the decision to fit my phenotype data to the genotype data, since the `dgrp2.tgeno` file is pretty big (~2GB) and therefore slow to work with. Once you've collected your phenotype data I strongly suggest saving it as a flat text file (I'm going to assume `phenotype.csv`) and change the permissions so you can't edit it by mistake. All the necessary manipulation happens within the `analysis_script.R`.
+  I made the decision to fit my phenotype data to the genotype data, since the `dgrp2.tgeno` file is pretty big (~2GB) and therefore slow to work with. The only munging I'll do to the genotype file is to cut it up into chunks to turn one *looooong* job into many jobs of a few hours:
+  > `sh chunk_genotype_file.sh`
 
-  The only munging I'll do to the genotype file is to cut it up into chunks to turn one *looooong* job into many jobs of a few hours:
-
-> `sh chunk_genotype_file.sh`
+  Once you've collected your phenotype data I strongly suggest saving it as a flat text file (I'm going to assume `phenotype.csv`) and change the permissions so you can't edit it by mistake. All the necessary manipulation happens within the `UnivarAssocAnalysis.R` or `MultivarAssocAnalysis.R`, but:
+  - I've assumed that your DGRP line ID's are formatted in the same way as in the dgrp2.tgeno file, i.e.; "line_21" – "line_913" and called simply "line", so please ensure that this is the case.
+  - If your phenotype is univariate and your phenotype file has more than 2 columns – line & phenotype – please edit `UnivarAssocAnalysis.R` at line #29

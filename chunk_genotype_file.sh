@@ -6,15 +6,25 @@
 #PBS -M pitchers@msu.edu
 ## –– ##
 
-nchunks=100           # feel free to change the number of chunks here
+###### feel free to change the number of chunks here
+nchunks=100
+###### NB: this number need not divide exactly into the number of variants, `split` function will not throw away data.
 
 # here I set up some variables
 genotype=dgrp2.tgeno
 nrows=`wc -l dgrp2.tgeno | cut -d ' ' -f 1`
 chunklength=`expr $nrows / $nchunks`
 
+# put the header line aside for later
+head -1 ${genotype} > headerfile
+
 # this line splits the dgrp2.tgeno file
 split -d -a 4 -l ${chunklength} dgrp2.tgeno DGRP_chunk_
+
+# now to fix the headers
+for i in seq -w 0001 ${nchunks}
+    do echo -e "$(cat headerfile) \n$(cat DGRP_chunk_${i})" > DGRP_chunk_${i}
+done
 
 # and this line moves the chunks into their own folder for tidiness
 mkdir DGRPchunks && mv DGRP_chunk_* DGRPchunks/
