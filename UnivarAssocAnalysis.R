@@ -2,12 +2,18 @@
 #' ### Association Analysis by Chromosome Chunk ###
 #' ### Univariate response phenotype ###
 
+#' This script execpts to be fed a chunk_ID. It will run a General Linear Model for each variant/SNP,
+#' with a single specified response phenotype and an arbitrary number of covariates. The user may also
+#' specifiy the desired error distribution; allowing for e.g. response data as counts/frequencies or
+#' other data with an non-gaussian error distribution.
+
 
 #' In this first code block the script loads the packages required and prints the R version infomation
+# ---- echo=FALSE
+print( paste( "analysis run on", date() ) )
 # ----
 R.version
 require( WGCNA )
-require( dplyr )
 require( MASS )
 
 
@@ -19,14 +25,11 @@ outputfilename <- paste( filename, "_association_output.csv", sep="" )
 SNPs <- read.table( filename, header=TRUE, na.strings="-" )
 
 
-#' Here I'm reading in the phenotype file -- obviously you'll need to edit this part
+#' Here I'm reading in the phenotype file -- obviously you'll need to edit this part.
 #' For demonstration I'm just using a set of fake line means generated with th `rnorm` function,
 #' but I've tested this script with individual-level datasets too.
 # ----
 phenotype <- read.csv( "phenotype_file.csv" )
-  if ( ncol( phenotype ) >2 ) {
-    focal_pheno <- dplyr::select( phenotype, line, take_off_speed )   ##### here "wing_span" is my focal trait: BE SURE TO ENTER YOURS! #####
-  }
 
 
 #' Here I'm extracting just the variant calls from the genotype file and transposing them before
@@ -42,18 +45,20 @@ SNP_call <- transposeBigData( SNPs[ , snp_start_col:ncol( SNPs ) ] )
 names( SNP_call ) <- SNPs$id
 SNP_call$line <- factor( row.names( SNP_call ))
 
-PandG <- full_join( focal_pheno, SNP_call, by="line" )
+
+#' Joining the Phenotypic and Genotypic data - this makes it easier to feed directly into `glm`
+# ----
+PandG <- full_join( phenotype, SNP_call, by="line" )
 
 
 #' Defining the Association function
 # ----
-UV_associations <- function( PandG, MAC=4, Family="gaussian", Covar=FALSE ) {
-#   i=1
-#   Covar=FALSE
+UV_associations <- function( PandG, FocalPhenotype, MAC=4, Family="gaussian", Covar=FALSE ) {
 
   ## set up objects/variables
-  pheno <- as.matrix( PandG[,2] )
-  geno <- as.matrix( PandG[, 3:ncol( PandG ) ] )
+  var_start_col <- grep( "[X23LR]{1,2}_\\d+_[A-Z]+", names( PandG ) )[1]
+  pheno <- as.matrix( PandG[ FocalPhenotype ] )
+  geno <- as.matrix( PandG[, var_start_col:ncol( PandG ) ] )
   n_sites  <- dim( geno )[[2]]
 
   output_data_frame <- data.frame( matrix( NA, nrow=n_sites, ncol=4 ) )
@@ -89,9 +94,9 @@ UV_associations <- function( PandG, MAC=4, Family="gaussian", Covar=FALSE ) {
 #' Running the Assocition function
 #' you can adjust the minimum acceptable minor allele count (MAC) in the function call,
 # ----
-output <- UV_associations( PandG )
-output <- UV_associations( PandG, MAC=4, Covar="phenotype$take_off_speed" )
+output <- UV_associations( PandG, FocalPhenotype="wing_span"  )    # defaults to MAC=4, Family="gaussian"
 
+# here is a more stringent MAC, with a covariate and fitting a different error distribution
+# output <- UV_associations( PandG, MAC=7, Covar="phenotype$take_off_speed", Family="quasipoisson" )
 
-
-# write.csv( output, outputfilename )
+write.csv( output, outputfilename )
