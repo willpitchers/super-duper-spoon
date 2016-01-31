@@ -1,6 +1,6 @@
 
 #' ### Association Analysis by Chromosome Chunk ###
-#' ### Univariate response phenotype ###
+#' ### Multivariate response phenotype ###
 
 #' This script execpts to be fed a chunk_ID. It will run a General Linear Model for each variant/SNP,
 #' with a single specified response phenotype and an arbitrary number of covariates. The user may also
@@ -16,6 +16,7 @@ R.version
 require( WGCNA )
 require( MASS )
 require( dplyr )
+require( car )
 
 
 #' This second block reads in the genotype 'chunk' file as specified by the value that replaces "CHUNK_FILE"
@@ -54,16 +55,16 @@ PandG <- full_join( phenotype, SNP_call, by="line" )
 
 #' Defining the Association function
 # ----
-UV_associations <- function( PandG, FocalPhenotype, MAC=4, Family="gaussian", Covar=FALSE ) {
+MV_associations <- function( PandG, LHS, MAC=4, Family="gaussian", Covar=FALSE ) {
 
   ## set up objects/variables
   var_start_col <- grep( "[X23LR]{1,2}_\\d+_[A-Z]+", names( PandG ) )[1]
-  pheno <- as.matrix( PandG[ FocalPhenotype ] )
+  pheno <- as.matrix( LHS )
   geno <- as.matrix( PandG[, var_start_col:ncol( PandG ) ] )
   n_sites  <- dim( geno )[[2]]
 
-  output_data_frame <- data.frame( matrix( NA, nrow=n_sites, ncol=4 ) )
-  names( output_data_frame ) <- c( "estimate", "std_error", "test_stat", "p_value" )
+  output_data_frame <- data.frame( matrix( NA, nrow=n_sites, ncol=6 ) )
+  names( output_data_frame ) <- c( "wilks", "approx_F", "num_DF", "den_DF", "p_value", "resid" )
 
   if( Covar==FALSE ) { my_form <- as.formula( pheno ~  geno[,i] )
                       } else { my_form <- as.formula( paste( "pheno ~  geno[,i] +", Covar ))
@@ -77,8 +78,9 @@ UV_associations <- function( PandG, FocalPhenotype, MAC=4, Family="gaussian", Co
 
     if ( minor_allele < MAC ) { output_data_frame[ i, ] <- NA  # NA output if there are too few lines with minor allele
     } else {
-          lin_mod <- glm( my_form, family = Family )
-          output_data_frame[i ,] <- summary( lin_mod )$coef[ 2, 1:4 ]
+          lin_mod <- manova( my_form )
+          output_data_frame[i ,1:5] <- summary( lin_mod, test="Wilks" )$stats[ 1, 2:6 ]
+          output_data_frame[i ,6] <- summary( lin_mod, test="Wilks" )$stats[ 2,1 ]
         }
 
     if ( Covar != FALSE & minor_allele > MAC ) {
@@ -95,7 +97,7 @@ UV_associations <- function( PandG, FocalPhenotype, MAC=4, Family="gaussian", Co
 #' Running the Assocition function
 #' you can adjust the minimum acceptable minor allele count (MAC) in the function call,
 # ----
-output <- UV_associations( PandG, FocalPhenotype="wing_span"  )    # defaults to MAC=4, Family="gaussian"
+output <- UV_associations( PandG, LHS=select( PandG, wing_span, take_off_speed )  )    # defaults to MAC=4, Family="gaussian"
 
 # here is a more stringent MAC, with a covariate and fitting a different error distribution
 # output <- UV_associations( PandG, MAC=7, Covar="phenotype$take_off_speed", Family="quasipoisson" )
