@@ -22,7 +22,7 @@ require( car )
 #' This second block reads in the genotype 'chunk' file as specified by the value that replaces "CHUNK_FILE"
 #' and sets the filename for the output
 # ----
-filename <- "DGRP_chunk_0100"#"CHUNK_FILE"
+filename <- "CHUNK_FILE"
 outputfilename <- paste( filename, "_association_output.csv", sep="" )
 SNPs <- read.table( filename, header=TRUE, na.strings="-" )
 
@@ -97,7 +97,7 @@ MV_associations <- function( PandG, LHS, MAC=4, Family="gaussian", Covar=FALSE )
 #' Running the Assocition function
 #' you can adjust the minimum acceptable minor allele count (MAC) in the function call,
 # ----
-output <- UV_associations( PandG, LHS=select( PandG, wing_span, take_off_speed )  )    # defaults to MAC=4, Family="gaussian"
+output <- MV_associations( PandG, LHS=select( PandG, wing_span, take_off_speed )  )    # defaults to MAC=4, Family="gaussian"
 
 # here is a more stringent MAC, with a covariate and fitting a different error distribution
 # output <- UV_associations( PandG, MAC=7, Covar="phenotype$take_off_speed", Family="quasipoisson" )

@@ -21,7 +21,7 @@ require( dplyr )
 #' This second block reads in the genotype 'chunk' file as specified by the value that replaces "CHUNK_FILE"
 #' and sets the filename for the output
 # ----
-filename <- "DGRP_chunk_0100"#"CHUNK_FILE"
+filename <- "CHUNK_FILE"
 outputfilename <- paste( filename, "_association_output.csv", sep="" )
 SNPs <- read.table( filename, header=TRUE, na.strings="-" )
 
